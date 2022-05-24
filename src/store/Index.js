@@ -1,7 +1,16 @@
-import thunk from 'redux-thunk';
 import {applyMiddleware, createStore} from 'redux';
 import {allReducers} from './allReducers';
+import storage from '@react-native-async-storage/async-storage';
+import {persistReducer, persistStore} from 'redux-persist';
 
-const allMiddleWares = applyMiddleware(thunk);
+const config = {
+  key: 'chatapp',
+  storage,
+  timeout: null,
+};
 
-export const store = createStore(allReducers, {}, allMiddleWares);
+const persistedReducer = persistReducer(config, allReducers);
+const allMiddleWares = applyMiddleware();
+
+export const store = createStore(persistedReducer, {}, allMiddleWares);
+export const Persistor = persistStore(store);

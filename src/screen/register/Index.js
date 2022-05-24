@@ -17,30 +17,47 @@ import {
   SetRegisterPassword,
 } from './redux/action';
 import auth, {firebase} from '@react-native-firebase/auth';
+import messaging from '@react-native-firebase/messaging';
+import {myDB} from '../../helpers/db';
+import {setDataUser} from '../login/redux/action';
 
 const Index = ({navigation}) => {
   // state
   const {email, password, bio, name} = useSelector(state => state.register);
   const dispatch = useDispatch();
 
-  // create new account
-  const createUser = () =>
-    auth()
-      .createUserWithEmailAndPassword(email, password)
-      .then(() => {
+  // create new user
+  const createUser = async () => {
+    try {
+      const res = await auth().createUserWithEmailAndPassword(email, password);
+      const token = await messaging().getToken();
+      if (token) {
+        const payload = {
+          name: name,
+          email: email,
+          bio: bio,
+          photoURL: 'https://randomuser.me/api/portraits/men/36.jpg',
+          roomChat: [],
+          _id: res.user.uid,
+          notifToken: token,
+        };
+        await myDB.ref(`users/${res.user.uid}`).set(payload);
+        dispatch(setDataUser(payload));
         firebase.auth().signOut();
         navigation.navigate('Login');
-      })
-      .catch(error => {
-        if (error.code === 'auth/email-already-in-use') {
-          Alert.alert('That email address is already in use!');
-        }
+      }
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        Alert.alert('That email address is already in use!');
+      }
 
-        if (error.code === 'auth/invalid-email') {
-          Alert.alert('That email address is invalid!');
-        }
-        console.error(error);
-      });
+      if (error.code === 'auth/invalid-email') {
+        Alert.alert('That email address is invalid!');
+      }
+      Alert.alert(error);
+    } finally {
+    }
+  };
 
   // view
   return (
@@ -65,9 +82,9 @@ const Index = ({navigation}) => {
       />
       <TextInput
         editable
-        maxLength={250}
+        maxLength={100}
         multiline
-        numberOfLines={8}
+        numberOfLines={4}
         style={styles.bio}
         placeholder="Bio"
         onChangeText={value => dispatch(SetRegisterBio(value))}
@@ -106,8 +123,7 @@ const styles = StyleSheet.create({
   bio: {
     padding: moderateScale(10),
     width: moderateScale(280),
-    // backgroundColor: 'red',
-    top: moderateScale(90),
+    top: moderateScale(150),
     left: moderateScale(35),
     borderBottomWidth: moderateScale(1),
     borderStyle: 'solid',
@@ -121,7 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     backgroundColor: '#4D96FF',
     left: moderateScale(35),
-    top: moderateScale(120),
+    top: moderateScale(170),
   },
   registerButtonText: {
     color: 'white',
@@ -137,7 +153,7 @@ const styles = StyleSheet.create({
     // fontWeight: 'bold',
     fontSize: moderateScale(14),
     marginLeft: moderateScale(70),
-    marginTop: moderateScale(130),
+    marginTop: moderateScale(180),
   },
   textLogin: {
     // fontWeight: 'bold',

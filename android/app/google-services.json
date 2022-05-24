@@ -1,13 +1,14 @@
 {
   "project_info": {
     "project_number": "525403407240",
+    "firebase_url": "https://chatapp-b18d0-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "chatapp-b18d0",
     "storage_bucket": "chatapp-b18d0.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:525403407240:android:ece83cbe5afd16c11eb03d",
+        "mobilesdk_app_id": "1:525403407240:android:e1ca45d5950a5b211eb03d",
         "android_client_info": {
           "package_name": "com.chatapp"
         }

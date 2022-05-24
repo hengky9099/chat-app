@@ -12,46 +12,45 @@ import {moderateScale} from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useDispatch, useSelector} from 'react-redux';
-import {SetLoginEmail, SetLoginPassword} from './redux/action';
+import {setDataUser, SetLoginEmail, SetLoginPassword} from './redux/action';
 import auth from '@react-native-firebase/auth';
-import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import messaging from '@react-native-firebase/messaging';
+import {myDB} from '../../helpers/db';
 
 const Index = ({navigation}) => {
   // state
   const {email, password} = useSelector(state => state.login);
   const dispatch = useDispatch();
 
-  // Login with email and password
-  const emailAuth = () =>
-    auth()
-      .signInWithEmailAndPassword(email, password)
-      .then(() => {
-        navigation.navigate('Dashboard');
-      })
-      .catch(error => {
-        if (error.code === 'auth/invalid-email') {
-          Alert.alert('That email address is invalid!');
+  const emailAuth = async () => {
+    try {
+      const res = await auth().signInWithEmailAndPassword(email, password);
+      const token = await messaging().getToken();
+      if (token) {
+        let isUpdate = false;
+        await myDB.ref(`users/${res.user.uid}`).update({
+          notifToken: token,
+        });
+        isUpdate = true;
+
+        if (isUpdate) {
+          const results = await myDB.ref(`users/${res.user.uid}`).once('value');
+          if (results.val()) {
+            dispatch(setDataUser(results.val()));
+            navigation.navigate('Dashboard');
+          }
         }
-        if (error.code === 'auth/wrong-password') {
-          Alert.alert('The password is invalid!');
-        }
-        console.error(error);
-      });
-
-  // Login with Gmail
-
-  GoogleSignin.configure({
-    webClientId:
-      '525403407240-4ktcqa3qg7b0od35dqm8n75r6lldreoi.apps.googleusercontent.com',
-  });
-
-  const onGoogleButtonPress = async () => {
-    // Get the users ID token
-    const {idToken} = await GoogleSignin.signIn();
-    // Create a Google credential with the token
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    // Sign-in the user with the credential
-    return auth().signInWithCredential(googleCredential);
+      }
+    } catch (error) {
+      if (error.code === 'auth/invalid-email') {
+        Alert.alert('That email address is invalid!');
+      }
+      if (error.code === 'auth/wrong-password') {
+        Alert.alert('The password is invalid!');
+      }
+      Alert.alert(error);
+    } finally {
+    }
   };
 
   // View
@@ -70,29 +69,14 @@ const Index = ({navigation}) => {
         placeholder="Password"
         secureTextEntry={true}
       />
-      <TouchableOpacity style={styles.loginButton}>
+      <TouchableOpacity style={styles.loginButton} onPress={emailAuth}>
         <Icon
           style={styles.loginButtonIcon}
           name="login"
           size={24}
           color={'white'}
-          onPress={emailAuth}
         />
         <Text style={styles.loginButtonText}>Login</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.googleButton}>
-        <Icons
-          style={styles.googleButtonIcon}
-          name="google"
-          size={24}
-          color={'white'}
-          onPress={() =>
-            onGoogleButtonPress().then(() =>
-              console.log('Signed in with Google!'),
-            )
-          }
-        />
-        <Text style={styles.googleButtonText}>Login with Google</Text>
       </TouchableOpacity>
       <Text style={styles.text}>Don't have an account?</Text>
       {/* register */}
@@ -169,7 +153,7 @@ const styles = StyleSheet.create({
     // fontWeight: 'bold',
     fontSize: moderateScale(14),
     marginLeft: moderateScale(70),
-    marginTop: moderateScale(200),
+    marginTop: moderateScale(180),
   },
   textregister: {
     // fontWeight: 'bold',
