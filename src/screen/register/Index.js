@@ -37,7 +37,6 @@ const Index = ({navigation}) => {
           email: email,
           bio: bio,
           photoURL: 'https://randomuser.me/api/portraits/men/36.jpg',
-          roomChat: [],
           _id: res.user.uid,
           notifToken: token,
         };

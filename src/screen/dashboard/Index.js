@@ -15,21 +15,44 @@ import {myDB} from '../../helpers/db';
 import {setChoosenUser} from './redux/action';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import auth from '@react-native-firebase/auth';
-import {FAB} from '@rneui/base';
+import {generateID} from '../../helpers/generateID';
 
 const Index = ({navigation}) => {
   const [data, setData] = useState([]);
+  const [contactList, setContactList] = useState([]);
   const {_user = {email: ''}} = useSelector(state => state.global);
-  const [user, setUser] = useState({});
   const dispatch = useDispatch();
 
   useEffect(() => {
     getAllData();
   }, [getAllData]);
 
-  const saveSelectedPerson = payload => {
-    dispatch(setChoosenUser(payload));
-    navigation.navigate('Chat');
+  const saveSelectedPerson = async payload => {
+    try {
+      await myDB.ref(`chatRoom/${generateID(_user._id, payload._id)}`).update({
+        participant: [_user._id, payload._id],
+      });
+      await myDB.ref(`contactRoom/${_user._id}`).update({
+        contact: [...contactList, {...payload}],
+      });
+      const friendContact = await myDB
+        .ref(`contactRoom/${payload._id}`)
+        .once('value');
+      console.log(friendContact.val());
+      if (friendContact.val()) {
+        await myDB.ref(`contactRoom/${payload._id}`).update({
+          contact: [...friendContact.val().contact, {..._user}],
+        });
+      } else {
+        await myDB.ref(`contactRoom/${payload._id}`).update({
+          contact: [{..._user}],
+        });
+      }
+      dispatch(setChoosenUser(payload));
+      navigation.navigate('Chat');
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const getAllData = useCallback(async () => {
@@ -38,6 +61,15 @@ const Index = ({navigation}) => {
       const userList = Object.values(res.val()).filter(
         val => val.email !== _user.email,
       );
+
+      myDB.ref(`contactRoom/${_user._id}`).on('value', snapshot => {
+        const res = snapshot.val();
+        if (res && res.contact) {
+          setContactList(res.contact);
+        } else {
+          setContactList([]);
+        }
+      });
       setData(userList);
     } catch (error) {
       console.log(error);

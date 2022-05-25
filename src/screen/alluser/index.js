@@ -13,6 +13,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {myDB} from '../../helpers/db';
 import {moderateScale} from 'react-native-size-matters';
 import {setChoosenUser} from '../dashboard/redux/action';
+import {generateID} from '../../helpers/generateID';
 
 const Index = ({navigation}) => {
   const [data, setData] = useState([]);
@@ -27,22 +28,6 @@ const Index = ({navigation}) => {
     getAllData();
   }, [getAllData]);
 
-  // const updateSearch = useCallback(
-  //   text => {
-  //     try {
-  //       const newData = myDB.ref('/users').on('value');
-  //       const searchData = Object.values(newData.val()).filter(
-  //         text => text.name == _user.name,
-  //       );
-  //       setData(searchData);
-  //     } catch (error) {
-  //       console.log(error);
-  //     } finally {
-  //     }
-  //   },
-  //   [_user.name],
-  // );
-
   const saveSelectedPerson = payload => {
     dispatch(setChoosenUser(payload));
     navigation.navigate('Chat');
@@ -50,12 +35,9 @@ const Index = ({navigation}) => {
 
   const getAllData = useCallback(async () => {
     try {
-      const res = await myDB.ref('/users').once('value');
-      const userList = Object.values(res.val()).filter(
-        val => val.email !== _user.email,
-      );
-
-      setData(userList);
+      const res = await myDB.ref(`contactRoom/${_user._id}`).once('value');
+      setData(res.val().contact);
+      console.log(res.val());
     } catch (error) {
       console.log(error);
     } finally {
